@@ -1,118 +1,129 @@
-# 📸 Cam‑Server com Inky pHAT
+# 📸 Cam‑Server with Inky pHAT (Standalone Pi Zero 2 W)
 
-Projeto para Raspberry Pi Zero 2 W (DietPi) com:
-- Módulo de câmara CSI (OV5640)
-- Inky pHAT como display de estado
-- LED RGB + botão físico para interação
-- Servidor web para galeria de fotos e GIFs
+Turn your Raspberry Pi Zero 2 W (DietPi) into a **fully standalone camera** with:
+
+- CSI camera (OV5640) capturing photos and GIFs  
+- **Physical button**:
+  - Short press → take photo  
+  - Long press → take GIF  
+- **RGB LED** shows status:
+  - Green → ready  
+  - Yellow → photo  
+  - Blue → GIF  
+  - Red → off  
+- **Inky pHAT** displays messages and count  
+- **Flask web server** hosts a local gallery (no Internet required)
 
 ---
 
-## 🔧 Instalação
+## 🔋 Low Power / Offline Mode
 
-Requisitos no host (Raspberry Pi com SPI/I²C ativos):
-```bash
-sudo apt update
-sudo apt install -y libcamera-apps python3-libcamera python3-pip
-````
+The system is optimized to **maximize battery life**:
 
-No projeto (via Docker ou pip em VENV):
+- Disables HDMI, Wi‑Fi, Bluetooth, USB, and onboard LEDs  
+- Underclocks the CPU (600 MHz, single core)  
+- Runs **offline**, no Internet needed
 
-```bash
-pip install -r requirements.txt
+Energy-saving steps referenced from the official Raspberry Pi power guide :contentReference[oaicite:1]{index=1}, including disabling HDMI, USB, Wi‑Fi, Bluetooth, LEDs, and setting a lower CPU frequency.
+
+---
+
+## 🌐 Local Server Access (No Internet Required)
+
+Yes — you can run the server without any Internet connection. You just need **local network access** to connect via browser:
+
+### 1. Using an existing network (router)
+Connect the Pi to your Wi‑Fi (through the router). Even without Internet, devices on the same network can visit:
 ```
 
+http\://\<PI\_IP>:8000
+
+```
+
+### 2. Direct hotspot mode
+Configure the Pi as a **Wi‑Fi Access Point (AP)** with DHCP (no NAT/Internet). Devices like your phone or laptop can directly connect to the Pi:
+```
+
+[http://192.168.4.1:8000](http://192.168.4.1:8000)
+
+````
+Ideal for field use — fully autonomous operation 
+
 ---
 
-## 🚀 Em desenvolvimento (via Docker)
+## ⚙️ Installation & Setup
 
+Clone the repository, then choose your setup:
+
+### A. Using Docker
 ```bash
 docker-compose up --build -d
+````
+
+### B. Without Docker (using Python virtual environment)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 app.py
 ```
 
-Acede em \<http\://<IP do Pi>:8000>.
+---
+
+## 🧠 How It Works
+
+* **Button actions**:
+
+  * Short press → photo
+  * Long press (2s) → GIF (5 frames)
+* **LED RGB** indicates:
+
+  * Green – system ready
+  * Yellow – photo capture
+  * Blue – GIF capture
+  * Red – system off
+* **Inky pHAT** shows messages & counts
+* **Server endpoints**:
+
+  * `/` → gallery display
+  * `/photos/<filename>` → serve file
+  * `/api/status` → JSON with photo + GIF counters
+
+Button-triggered actions are safe even when offline; flash storage is local.
 
 ---
 
-## 🧪 Testes sem Docker
+## 🧭 Next Steps & Enhancements
 
-1. Ativa ambiente virtual:
-
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-2. Arranca manualmente:
-
-   ```bash
-   python3 app.py
-   ```
+* Add **live video streaming** using MJPEG/libcamera
+* Implement **backup and sync** (Google Drive, Dropbox)
+* Enable Pi **hotspot configuration on first boot**, if no router detected
+* Add **double press** to reboot or **hold hold** to shut down
 
 ---
 
-## 🧰 Hardware & conexões
+## 📝 Offline Access Summary
 
-| Item      | Pinos GPIO (BCM)                                                             | Função           |
-| --------- | ---------------------------------------------------------------------------- | ---------------- |
-| LED RGB   | 22 (R), 27 (G), 17 (B)                                                       | Status           |
-| Botão     | 5 (pull-up)                                                                  | Ações: foto, GIF |
-| Inky pHAT | SPI0 + I²C (sem conflito de CS — `dtoverlay=spi0-0cs` no `/boot/config.txt`) |                  |
+| Mode                    | Local Access? | Internet Required? |
+| ----------------------- | ------------- | ------------------ |
+| Connected to router     | ✅             | ❌                  |
+| Access Point standalone | ✅             | ❌                  |
 
----
-
-## 🎛️ Como funciona
-
-* **Botão**:
-
-  * Pressão curta → tira foto
-  * Pressão longa → cria GIF (5 imagens)
-
-* **LED RGB**:
-
-  * Verde → pronto
-  * Amarelo → a tirar foto
-  * Azul → a criar GIF
-  * Vermelho → servidor parado
-
-* **Inky pHAT** acusa o estado atual e número de itens.
-
-* **Servidor web**:
-
-  * `/` → galeria de fotos e GIFs
-  * `/photos/<nome>` → serve ficheiro
-  * `/api/status` → devolve JSON com contadores
+No external infrastructure is required—just power the Pi, and it's a functioning camera + server!
 
 ---
 
-## 🌟 Exemplos de uso
+## 📋 References
 
-* **Tira uma foto**: pressiona botão (LED fica amarelo), Inky atualiza contagem.
-* **Cria um GIF**: mantém pressionado (LED azul), Inky indica “GIF!”.
-* **Visualiza galerias**: acede via browser ao IP:8000.
-
----
-
-## 🌐 Referências
-
-* Projeto similar: Flask + transmissão de câmara via Pi (<339⭐) ([adambowie.com][1], [github.com][2], [github.com][3])
-* Implementação Inky pHAT com SPI/I²C (`dtoverlay=spi0-0cs`)&#x20;
+* Disable hardware (HDMI, Wi‑Fi, Bluetooth, LEDs, USB) for power saving ([blues.com][1], [peppe8o.com][2], [dietpi.com][3], [raspberrypi.stackexchange.com][4], [forums.raspberrypi.com][5])
+* Raspberry Pi as an offline Access Point (AP mode) ([forums.raspberrypi.com][5])
+* Build Access Point without Internet (via DietPi tools) ([dietpi.com][6])
 
 ---
 
-## 🛠️ Próximos passos
+## 🏁 Conclusion
 
-* Adicionar **streaming de vídeo ao vivo**
-* Suporte a **backup automático** (ex: Dropbox ou Google Drive)
-* Diferentes **modos de botão**:
+You're building a **battery-powered, standalone photo/GIF camera**, fully headless, with live gallery access—all without needing the Internet. Just power it, press the button, and share the content via Wi‑Fi.
 
-  * Pressão dupla para reiniciar
-  * Pressão longa para desligar via libcamera ou systemd
-
----
-
-> Feito com ❤️ para automação simples com interface física e web.
-
-[1]: https://www.adambowie.com/blog/2019/09/news-twitter-feeds-and-inky-what-e-ink-display/?utm_source=chatgpt.com "News Twitter Feeds and Inky WHAT E-Ink Display – adambowie.com"
-[2]: https://github.com/pimoroni/inky/blob/master/README.md?utm_source=chatgpt.com "inky/README.md at main · pimoroni/inky - GitHub"
-[3]: https://github.com/pimoroni/inky?utm_source=chatgpt.com "pimoroni/inky: Combined library for V2/V3 Inky pHAT and Inky wHAT."
+Ready to roll!
