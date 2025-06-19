@@ -1,6 +1,3 @@
-Aqui está um **README.md** polido e completo para o teu projeto `cam-server`, com instruções claras para setup, uso e deploy. Podes copiá-lo para o repositório no GitHub:
-
-````markdown
 # 📸 Cam‑Server com Inky pHAT
 
 Projeto para Raspberry Pi Zero 2 W (DietPi) com:
