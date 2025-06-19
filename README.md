@@ -1,129 +1,90 @@
-# 📸 Cam‑Server with Inky pHAT (Standalone Pi Zero 2 W)
+# Raspberry Pi Zero 2W Camera Server with Inky pHAT
 
-Turn your Raspberry Pi Zero 2 W (DietPi) into a **fully standalone camera** with:
+## Overview
 
-- CSI camera (OV5640) capturing photos and GIFs  
-- **Physical button**:
-  - Short press → take photo  
-  - Long press → take GIF  
-- **RGB LED** shows status:
-  - Green → ready  
-  - Yellow → photo  
-  - Blue → GIF  
-  - Red → off  
-- **Inky pHAT** displays messages and count  
-- **Flask web server** hosts a local gallery (no Internet required)
+This project turns a Raspberry Pi Zero 2W with an OV5640 camera and an Inky pHAT display into a standalone camera system.  
+It captures photos and animated GIFs, displays status messages on the Inky pHAT, and serves saved images via a simple web server.
 
 ---
 
-## 🔋 Low Power / Offline Mode
+## Features
 
-The system is optimized to **maximize battery life**:
-
-- Disables HDMI, Wi‑Fi, Bluetooth, USB, and onboard LEDs  
-- Underclocks the CPU (600 MHz, single core)  
-- Runs **offline**, no Internet needed
-
-Energy-saving steps referenced from the official Raspberry Pi power guide :contentReference[oaicite:1]{index=1}, including disabling HDMI, USB, Wi‑Fi, Bluetooth, LEDs, and setting a lower CPU frequency.
+- Capture photos and animated GIFs from OV5640 camera  
+- Inky pHAT displays status messages like power on/off, photo count, saving, server status, etc., with a fun Apple-inspired mascot  
+- External button and RGB LED control all main functions (capture photo, capture gif, power on/off)  
+- Built-in Flask server to view and download saved photos and gifs over the network  
+- Battery saving mode: can operate standalone without WiFi, acting purely as a camera
 
 ---
 
-## 🌐 Local Server Access (No Internet Required)
+## Hardware Connections
 
-Yes — you can run the server without any Internet connection. You just need **local network access** to connect via browser:
-
-### 1. Using an existing network (router)
-Connect the Pi to your Wi‑Fi (through the router). Even without Internet, devices on the same network can visit:
-```
-
-http\://\<PI\_IP>:8000
-
-```
-
-### 2. Direct hotspot mode
-Configure the Pi as a **Wi‑Fi Access Point (AP)** with DHCP (no NAT/Internet). Devices like your phone or laptop can directly connect to the Pi:
-```
-
-[http://192.168.4.1:8000](http://192.168.4.1:8000)
-
-````
-Ideal for field use — fully autonomous operation 
+- **Camera:** OV5640 connected via CSI  
+- **Inky pHAT:** Connected via SPI (pins need to be shared carefully with camera; no simultaneous SPI use)  
+- **Button:** Connected to GPIO17 (example, configurable)  
+- **RGB LED:** Connected to GPIO18 (Red), GPIO23 (Green), GPIO24 (Blue)  
+- **Power:** Use appropriate power supply for Raspberry Pi Zero 2W
 
 ---
 
-## ⚙️ Installation & Setup
+## Software Setup
 
-Clone the repository, then choose your setup:
+- Runs on DietPi or Raspberry Pi OS Lite  
+- Python 3.11 environment with dependencies managed via `requirements.txt` and virtualenv  
+- Main scripts in `scripts/` folder: camera capture, button & LED manager, Inky pHAT display controller  
+- Flask web app in `app.py` serves images and status API  
+- Uses `libcamera` for camera control  
 
-### A. Using Docker
-```bash
-docker-compose up --build -d
-````
+---
 
-### B. Without Docker (using Python virtual environment)
+## Running the Project
+
+1. Clone the repo and set up Python environment  
+2. Run `main.py` to start camera service and web server  
+3. Access the web interface via `http://<pi_ip>:5000` to view photos  
+4. Use the button to capture photos or gifs; LED and Inky pHAT indicate status  
+
+---
+
+## Testing
+
+This project includes a comprehensive automated test suite using **pytest** and **tox**:
+
+- Unit tests for camera capture, Flask endpoints, button/LED logic, and Inky display  
+- Hardware interactions are mocked for safe testing on any system  
+- Linting with **ruff** is integrated into `tox`  
+- Run tests and lint with:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python3 app.py
-```
+tox
+````
+
+* Tests ensure code reliability and help maintain battery-saving standalone functionality
 
 ---
 
-## 🧠 How It Works
+## Notes
 
-* **Button actions**:
-
-  * Short press → photo
-  * Long press (2s) → GIF (5 frames)
-* **LED RGB** indicates:
-
-  * Green – system ready
-  * Yellow – photo capture
-  * Blue – GIF capture
-  * Red – system off
-* **Inky pHAT** shows messages & counts
-* **Server endpoints**:
-
-  * `/` → gallery display
-  * `/photos/<filename>` → serve file
-  * `/api/status` → JSON with photo + GIF counters
-
-Button-triggered actions are safe even when offline; flash storage is local.
+* When running as a standalone camera (without WiFi), the server is still active on localhost for local interactions or USB networking
+* SPI pins are shared between Inky pHAT and camera — only one SPI device active at a time
+* Button controls multiple modes; LED colors reflect current state (e.g., red for error, green for ready)
+* The Inky pHAT displays fun status messages and counts with an Apple-inspired mascot for engagement
 
 ---
 
-## 🧭 Next Steps & Enhancements
+## License
 
-* Add **live video streaming** using MJPEG/libcamera
-* Implement **backup and sync** (Google Drive, Dropbox)
-* Enable Pi **hotspot configuration on first boot**, if no router detected
-* Add **double press** to reboot or **hold hold** to shut down
+MIT License — see LICENSE file
 
 ---
 
-## 📝 Offline Access Summary
+## Contributions
 
-| Mode                    | Local Access? | Internet Required? |
-| ----------------------- | ------------- | ------------------ |
-| Connected to router     | ✅             | ❌                  |
-| Access Point standalone | ✅             | ❌                  |
-
-No external infrastructure is required—just power the Pi, and it's a functioning camera + server!
+Contributions welcome! Please open issues or pull requests for bug fixes, features, or documentation improvements.
 
 ---
 
-## 📋 References
+## Contact
 
-* Disable hardware (HDMI, Wi‑Fi, Bluetooth, LEDs, USB) for power saving ([blues.com][1], [peppe8o.com][2], [dietpi.com][3], [raspberrypi.stackexchange.com][4], [forums.raspberrypi.com][5])
-* Raspberry Pi as an offline Access Point (AP mode) ([forums.raspberrypi.com][5])
-* Build Access Point without Internet (via DietPi tools) ([dietpi.com][6])
+For questions or support, open an issue on GitHub or contact the maintainer.
 
----
-
-## 🏁 Conclusion
-
-You're building a **battery-powered, standalone photo/GIF camera**, fully headless, with live gallery access—all without needing the Internet. Just power it, press the button, and share the content via Wi‑Fi.
-
-Ready to roll!
