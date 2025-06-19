@@ -1,90 +1,174 @@
 # Raspberry Pi Zero 2W Camera Server with Inky pHAT
 
+![Project Banner](./static/banner.png)
+
+---
+
 ## Overview
 
-This project turns a Raspberry Pi Zero 2W with an OV5640 camera and an Inky pHAT display into a standalone camera system.  
-It captures photos and animated GIFs, displays status messages on the Inky pHAT, and serves saved images via a simple web server.
+This project transforms a **Raspberry Pi Zero 2W** equipped with an **OV5640 camera** and an **Inky pHAT e-paper display** into a smart, standalone camera system. It captures photos and animated GIFs, displays witty status updates and photo counts on the Inky pHAT with an Apple-inspired mascot, and serves a web interface for browsing and downloading saved media.
+
+Ideal for battery-powered deployments or situations where a lightweight, low-power photo server is required.
 
 ---
 
 ## Features
 
-- Capture photos and animated GIFs from OV5640 camera  
-- Inky pHAT displays status messages like power on/off, photo count, saving, server status, etc., with a fun Apple-inspired mascot  
-- External button and RGB LED control all main functions (capture photo, capture gif, power on/off)  
-- Built-in Flask server to view and download saved photos and gifs over the network  
-- Battery saving mode: can operate standalone without WiFi, acting purely as a camera
+- **Capture photos and animated GIFs** using the OV5640 camera module  
+- **Inky pHAT display** shows status messages, photo count, power state, and fun Apple-inspired mascot animations  
+- **Single multifunction button** controls capture modes and power, with feedback from an RGB LED (Red/Green/Blue)  
+- **Lightweight Flask web server** streams saved photos and GIFs accessible from any browser on your network  
+- **Battery-saving standalone mode** with camera-only operation (no WiFi needed)  
+- **Docker-ready** for easy deployment and consistency across environments  
+- **Comprehensive automated testing** with `pytest` and `tox` ensures reliability  
 
 ---
 
-## Hardware Connections
+## Hardware Setup
 
-- **Camera:** OV5640 connected via CSI  
-- **Inky pHAT:** Connected via SPI (pins need to be shared carefully with camera; no simultaneous SPI use)  
-- **Button:** Connected to GPIO17 (example, configurable)  
-- **RGB LED:** Connected to GPIO18 (Red), GPIO23 (Green), GPIO24 (Blue)  
-- **Power:** Use appropriate power supply for Raspberry Pi Zero 2W
+### Components
+
+- **Raspberry Pi Zero 2W**  
+- **OV5640 camera module** (connected to CSI interface)  
+- **Inky pHAT** e-paper display (SPI interface)  
+- **Multifunction button** wired to GPIO17 (configurable)  
+- **RGB LED** wired to GPIO18 (Red), GPIO23 (Green), GPIO24 (Blue)  
+
+### Wiring Notes
+
+- SPI pins are shared between the camera and Inky pHAT; only one SPI device should be active at a time.  
+- Connect the button and RGB LED to the indicated GPIOs on the Pi’s lower header (soldar na parte inferior).  
+- Use appropriate resistors for LEDs and button pull-up/down configuration.  
 
 ---
 
 ## Software Setup
 
-- Runs on DietPi or Raspberry Pi OS Lite  
-- Python 3.11 environment with dependencies managed via `requirements.txt` and virtualenv  
-- Main scripts in `scripts/` folder: camera capture, button & LED manager, Inky pHAT display controller  
-- Flask web app in `app.py` serves images and status API  
-- Uses `libcamera` for camera control  
+### Requirements
+
+- Raspberry Pi OS Lite or DietPi (tested on both)  
+- Python 3.11 with virtual environment support  
+- Docker and Docker Compose (optional, for container deployment)  
+
+### Installation
+
+Clone the repository on your Raspberry Pi or development machine:
+
+```bash
+git clone https://github.com/yourusername/cam-server.git
+cd cam-server
+````
+
+Create and activate a Python virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Alternatively, build and run the Docker container:
+
+```bash
+docker-compose up --build
+```
+
+### Camera Mode Setup (Standalone)
+
+Run the camera mode setup script to enable the camera and disable SPI (for power saving):
+
+```bash
+sudo ./setup_camera_mode.sh
+```
+
+Reboot your Pi to apply changes:
+
+```bash
+sudo reboot
+```
 
 ---
 
-## Running the Project
+## Usage
 
-1. Clone the repo and set up Python environment  
-2. Run `main.py` to start camera service and web server  
-3. Access the web interface via `http://<pi_ip>:5000` to view photos  
-4. Use the button to capture photos or gifs; LED and Inky pHAT indicate status  
+Start the main application:
+
+```bash
+python app.py
+```
+
+Or with Docker (already running from above):
+
+```bash
+docker-compose up
+```
+
+Open a browser on your local network and navigate to:
+
+```
+http://<pi_ip_address>:5000
+```
+
+You will see the live gallery of photos and GIFs saved on the device.
+
+---
+
+## Button & LED Controls
+
+| Action                | Button Press                | LED Color       | Inky pHAT Message             |
+| --------------------- | --------------------------- | --------------- | ----------------------------- |
+| Power On              | Long press                  | Green           | "Power On" + mascot animation |
+| Capture Photo         | Single press                | Blue (blinking) | "Photo Saved! Count: N"       |
+| Capture GIF Animation | Double press                | Purple          | "GIF Saved! Count: N"         |
+| Power Off             | Long press (hold 5 seconds) | Red             | "Powering Down..."            |
 
 ---
 
 ## Testing
 
-This project includes a comprehensive automated test suite using **pytest** and **tox**:
+We use `pytest` and `tox` for automated testing, including mocks for hardware interfaces so you can test anywhere.
 
-- Unit tests for camera capture, Flask endpoints, button/LED logic, and Inky display  
-- Hardware interactions are mocked for safe testing on any system  
-- Linting with **ruff** is integrated into `tox`  
-- Run tests and lint with:
+To run tests and lint checks:
 
 ```bash
 tox
-````
+```
 
-* Tests ensure code reliability and help maintain battery-saving standalone functionality
+This runs:
+
+* Unit tests for camera capture, Flask API, button & LED logic, Inky pHAT display
+* Code style checks and auto-fixes with `ruff`
+* Coverage reports for test completeness
 
 ---
 
-## Notes
+## Screenshots
 
-* When running as a standalone camera (without WiFi), the server is still active on localhost for local interactions or USB networking
-* SPI pins are shared between Inky pHAT and camera — only one SPI device active at a time
-* Button controls multiple modes; LED colors reflect current state (e.g., red for error, green for ready)
-* The Inky pHAT displays fun status messages and counts with an Apple-inspired mascot for engagement
+![Web Gallery](./static/screenshots/web_gallery.png)
+*Photo gallery served by the Flask app.*
+
+![Inky pHAT Status](./static/screenshots/inky_status.png)
+*Inky pHAT display showing mascot and photo count.*
+
+---
+
+## Contribution & Support
+
+Feel free to contribute! Open issues and pull requests are welcome.
+For questions, please open an issue or contact the maintainer.
 
 ---
 
 ## License
 
-MIT License — see LICENSE file
+This project is licensed under the **MIT License**. See [LICENSE](./LICENSE) for details.
 
 ---
 
-## Contributions
-
-Contributions welcome! Please open issues or pull requests for bug fixes, features, or documentation improvements.
+Thank you for checking out the Raspberry Pi Camera Server project!
+Bring your Pi to life as a smart, battery-efficient camera with personality.
 
 ---
 
-## Contact
-
-For questions or support, open an issue on GitHub or contact the maintainer.
+*Made with ❤️ for makers, hackers, and creative coders.*
 
