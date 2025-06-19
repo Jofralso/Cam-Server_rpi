@@ -1,0 +1,12 @@
+camera:
+  resolution: [640, 480]
+
+paths:
+  photos: "./photos"
+  gifs: "./photos"
+
+gpio:
+  led_red: 22
+  led_green: 27
+  led_blue: 17
+  button: 5

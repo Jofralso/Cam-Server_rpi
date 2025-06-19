@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cam Server</title>
+</head>
+<body>
+  <h1>📸 Cam Server</h1>
+  {% for item in items %}
+    <div>
+      {% if item.endswith('.gif') %}
+        <img src="/photos/{{ item }}">
+      {% else %}
+        <img src="/photos/{{ item }}" width="320">
+      {% endif %}
+    </div>
+  {% endfor %}
+</body>
+</html>

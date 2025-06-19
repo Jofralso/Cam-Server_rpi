@@ -1,0 +1,6 @@
+flask
+inky
+gpiozero
+Pillow
+python3-libcamera
+imageio
