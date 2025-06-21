@@ -3,7 +3,7 @@ from flask import Flask, render_template, send_from_directory, jsonify, request
 from pathlib import Path
 from threading import Thread
 from scripts.capture import capture_photo, capture_gif
-from display_fast import show_on_inky
+from display import show_on_inky
 from led import indicate
 from buttons import btn
 import time

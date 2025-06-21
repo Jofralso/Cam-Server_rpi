@@ -17,7 +17,7 @@ inky:
   - steve_jobs_erro
   color: red
   height: 122
-  mascot: steve_jobs_standby
+  mascot: steve_jobs_desligado
   width: 250
 paths:
   gifs: ./photos
