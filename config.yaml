@@ -1,24 +1,30 @@
 camera:
+  fps: 30
+  optimize_for_speed: true
+  preview_quality: low
   resolution:
   - 640
   - 480
 gpio:
-  button: 5
-  led_blue: 15
-  led_green: 24
-  led_red: 23
+  button: 6
+  led:
+    blue: 16
+    green: 21
+    red: 20
 inky:
-  available_mascots:
-  - steve_jobs_ligado
-  - steve_jobs_standby
-  - steve_jobs_desligado
-  - steve_jobs_tirar_foto
-  - steve_jobs_tirar_gif
-  - steve_jobs_erro
   color: red
-  height: 122
-  mascot: steve_jobs_desligado
-  width: 250
+  current_state: tirar_foto
+  current_theme: apple_mascot
+  dimensions:
+  - 250
+  - 122
+  states:
+  - ligado
+  - standby
+  - desligado
+  - tirar_foto
+  - tirar_gif
+  - erro
 paths:
   gifs: ./photos
   photos: ./photos

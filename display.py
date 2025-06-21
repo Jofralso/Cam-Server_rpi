@@ -5,7 +5,7 @@ from inky import auto
 # Inicializa o driver inky
 inky = auto()
 WIDTH, HEIGHT = inky.width, inky.height
-inky.set_border(inky.WHITE)
+inky.set_border(inky.BLACK)
 
 # Cores para o inky standard
 WHITE = inky.WHITE
@@ -14,20 +14,20 @@ RED = inky.RED if hasattr(inky, 'RED') else inky.BLACK
 
 # Carrega fonte maior
 try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 18)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 12)
 except IOError:
     font = ImageFont.load_default()
 
-def draw_camera_icon(draw, x, y, color=BLACK):
-    draw.rectangle((x, y + 4, x + 12, y + 12), outline=color)
-    draw.rectangle((x + 2, y, x + 10, y + 4), outline=color)
-    draw.ellipse((x + 3, y + 5, x + 9, y + 11), outline=color)
-    draw.ellipse((x + 5, y + 7, x + 7, y + 9), fill=color)
+def draw_camera_icon(draw, x, y, color=RED):
+    draw.rectangle((x, y + 8, x + 24, y + 24), outline=color)
+    draw.rectangle((x + 4, y, x + 20, y + 8), outline=color)
+    draw.ellipse((x + 6, y + 10, x + 18, y + 22), outline=color)
+    draw.ellipse((x + 10, y + 14, x + 14, y + 18), fill=color)
 
-def draw_gif_icon(draw, x, y, color=BLACK):
+def draw_gif_icon(draw, x, y, color=RED):
     draw.text((x, y), "GIF", font=font, fill=color)
 
-def draw_error_icon(draw, x, y, color=BLACK):
+def draw_error_icon(draw, x, y, color=RED):
     draw.ellipse((x, y, x + 12, y + 12), outline=color)
     draw.line((x + 6, y + 2, x + 6, y + 8), fill=color, width=2)
     draw.line((x + 6, y + 10, x + 6, y + 10), fill=color, width=2)
@@ -54,7 +54,7 @@ def show_on_inky(background_path,
     # 2) Cria canvas com paleta para o inky
     img = Image.new("P", (WIDTH, HEIGHT))
     img.putpalette([255, 255, 255, 0, 0, 0, 255, 0, 0])
-    img.paste(WHITE, (0, 0, WIDTH, HEIGHT))
+    img.paste(BLACK, (0, 0, WIDTH, HEIGHT))
     draw = ImageDraw.Draw(img)
 
     # 3) Cola o bg na metade esquerda, mantendo proporção
@@ -77,24 +77,24 @@ def show_on_inky(background_path,
         img.paste(bw_bg, (px, py))
 
     # 4) Desenha texto em preto na metade direita
-    tx, ty = WIDTH // 2 + 5, 5
+    tx, ty = WIDTH // 2, 20
     if photos_taken is not None:
-        draw.text((tx, ty), f"Fotos: {photos_taken}", font=font, fill=BLACK)
+        draw.text((tx, ty), f"Fotos: {photos_taken}", font=font, fill=WHITE)
         ty += 30
     if gifs_created is not None:
-        draw.text((tx, ty), f"GIFs: {gifs_created}", font=font, fill=BLACK)
+        draw.text((tx, ty), f"GIFs: {gifs_created}", font=font, fill=WHITE)
         ty += 30
     if battery_level is not None:
-        draw.text((tx, ty), f"Bateria: {battery_level}%", font=font, fill=BLACK)
+        draw.text((tx, ty), f"Bateria: {battery_level}%", font=font, fill=WHITE)
         ty += 30
     if wifi_strength is not None:
-        draw.text((tx, ty), f"WIFI: {'Sim' if wifi_strength else 'Não'}", font=font, fill=BLACK)
+        draw.text((tx, ty), f"WIFI: {'Sim' if wifi_strength else 'Não'}", font=font, fill=WHITE)
         ty += 30
     if state_text:
-        draw.text((tx, HEIGHT - 35), state_text, font=font, fill=BLACK)
+        draw.text((tx, HEIGHT - 35), state_text, font=font, fill=WHITE)
 
     # 5) Ícones no canto inferior direito
-    ix, iy = WIDTH - 20, HEIGHT - 40
+    ix, iy = WIDTH - 80, HEIGHT - 70
     if show_error_icon:
         draw_error_icon(draw, ix, iy)
         ix -= 20
@@ -118,7 +118,11 @@ def update_display(state_text='standby', counter=None, show_camera_icon=False,
     try:
         cfg_path = Path('config.yaml')
         cfg = yaml.safe_load(cfg_path.read_text())
-        mascot_path = f"static/mascots/{cfg['inky']['mascot']}.png"
+        
+        # Fix path to use the images directory
+        theme = cfg['inky']['current_theme']
+        state = cfg['inky']['current_state'] 
+        mascot_path = f"./images/{theme}_{state}.png"
         
         # Pass all data to show_on_inky function
         photos_taken = counter['photos'] if counter else None

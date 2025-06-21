@@ -1,0 +1,15 @@
+[Unit]
+Description=Camera Server with Inky Display
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Cam-Server_rpi
+ExecStartPre=/home/pi/Cam-Server_rpi/release_gpio.sh
+ExecStart=/home/pi/Cam-Server_rpi/cam_venv/bin/python3 /home/pi/Cam-Server_rpi/app.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

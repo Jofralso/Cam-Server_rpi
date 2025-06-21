@@ -175,6 +175,24 @@
               location.reload();
           });
     });
+
+    // Track the last known capture time
+    let lastKnownCaptureTime = 0;
+    
+    // Check for updates every 2 seconds
+    setInterval(function() {
+      fetch('/api/last_capture')
+        .then(response => response.json())
+        .then(data => {
+          // If there's a new capture and it's newer than what we know about
+          if (data.timestamp > lastKnownCaptureTime && lastKnownCaptureTime > 0) {
+            console.log("New content detected, refreshing...");
+            window.location.reload();
+          }
+          lastKnownCaptureTime = data.timestamp;
+        })
+        .catch(error => console.error('Error checking for updates:', error));
+    }, 2000);
 </script>
 </body>
 </html>

@@ -8,6 +8,7 @@ from led import indicate
 from buttons import btn
 import time
 import logging
+import threading
 
 
 
@@ -22,11 +23,29 @@ photo_dir.mkdir(exist_ok=True)
 
 counter = {'photos': 0, 'gifs': 0}
 
+# Track when the last photo/gif was taken
+last_capture_time = 0
+
+# Inicializar contador com arquivos existentes
+def initialize_counters():
+    global counter
+    photo_files = [p for p in photo_dir.iterdir() if p.suffix.lower() in ['.jpg', '.jpeg', '.png']]
+    gif_files = [p for p in photo_dir.iterdir() if p.suffix.lower() == '.gif']
+    counter['photos'] = len(photo_files)
+    counter['gifs'] = len(gif_files)
+    logging.info(f"Contadores inicializados: {len(photo_files)} fotos, {len(gif_files)} GIFs encontrados")
+
+# Inicializar contadores com arquivos existentes
+initialize_counters()
+
 app = Flask(__name__)
 
 def update_display(state_text="", show_camera_icon=False, show_gif_icon=False, show_error_icon=False):
-    mascot_base = cfg['inky']['mascot']
-    img_path = f"./images/{mascot_base}.png"
+    # Build path from theme and state
+    theme = cfg['inky']['current_theme']
+    state = cfg['inky']['current_state']
+    mascot_id = f"{theme}_{state}"
+    img_path = f"./images/{mascot_id}.png"
 
     try:
         show_on_inky(
@@ -40,7 +59,7 @@ def update_display(state_text="", show_camera_icon=False, show_gif_icon=False, s
             show_gif_icon=show_gif_icon,
             show_error_icon=show_error_icon,
         )
-        logging.info(f"Atualizando display: mascote {mascot_base} - estado '{state_text}'")
+        logging.info(f"Atualizando display: mascote {mascot_id} - estado '{state_text}'")
     except FileNotFoundError:
         logging.error(f"Erro: Imagem de fundo não encontrada em {img_path}")
 
@@ -50,7 +69,13 @@ def index():
     items = sorted(photo_dir.iterdir(), reverse=True)
     photos = [p.name for p in items if p.suffix.lower() in ['.jpg', '.jpeg', '.png']]
     gifs = [p.name for p in items if p.suffix.lower() == '.gif']
-    return render_template('index.html', photos=photos, gifs=gifs, mascot=cfg['inky']['mascot'])
+    
+    # Use current_theme instead of mascot
+    theme = cfg['inky']['current_theme']
+    state = cfg['inky']['current_state']
+    mascot_id = f"{theme}_{state}"
+    
+    return render_template('index.html', photos=photos, gifs=gifs, mascot=mascot_id)
 
 @app.route('/photos/<name>')
 def photo(name):
@@ -61,8 +86,13 @@ def photo(name):
 def status():
     return jsonify(counter)
 
+@app.route('/api/last_capture')
+def last_capture():
+    return jsonify({'timestamp': last_capture_time})
+
 @app.route('/api/button_press', methods=['POST'])
 def button_press():
+    global last_capture_time
     data = request.json or {}
     t = data.get('type')
     logging.info(f"Button pressed of type: {t}")
@@ -70,15 +100,35 @@ def button_press():
     if t == 'photo':
         counter['photos'] += 1
         indicate('photo')
+        
+        # Set state to photo mode
+        cfg['inky']['current_state'] = 'tirar_foto'
+        cfg_path.write_text(yaml.safe_dump(cfg))
+        
         update_display(state_text='A TIRAR FOTO', show_camera_icon=True)
         capture_photo()
-        update_display(state_text='Pronto')
+        
+        # Update timestamp for auto-refresh
+        last_capture_time = time.time()
+        
+        # Start standby timer to reset display after 30 seconds
+        start_standby_timer()
     elif t == 'gif':
         counter['gifs'] += 1
         indicate('gif')
+        
+        # Set state to gif mode
+        cfg['inky']['current_state'] = 'tirar_gif'
+        cfg_path.write_text(yaml.safe_dump(cfg))
+        
         update_display(state_text='A TIRAR GIF', show_gif_icon=True)
         capture_gif()
-        update_display(state_text='Pronto')
+        
+        # Update timestamp for auto-refresh
+        last_capture_time = time.time()
+        
+        # Start standby timer to reset display after 30 seconds
+        start_standby_timer()
     else:
         logging.warning(f"Tipo de botão desconhecido: {t}")
 
@@ -86,45 +136,95 @@ def button_press():
 
 @app.route('/api/toggle_mascot', methods=['POST'])
 def toggle_mascot():
-    mascots = cfg['inky'].get('available_mascots', [])
-    current = cfg['inky'].get('mascot', '')
-
-    if not mascots:
-        return jsonify({'error': 'Nenhuma mascote configurada'}), 500
-
-    try:
-        idx = mascots.index(current)
-        new_mascot = mascots[(idx + 1) % len(mascots)]
-    except ValueError:
-        new_mascot = mascots[0]
-
-    cfg['inky']['mascot'] = new_mascot
+    # Toggle between themes
+    current_theme = cfg['inky']['current_theme']
+    
+    # Simple toggle between two themes
+    new_theme = "apple_mascot" if current_theme == "steve_jobs" else "steve_jobs"
+    
+    # Update theme in config
+    cfg['inky']['current_theme'] = new_theme
     cfg_path.write_text(yaml.safe_dump(cfg))
-
-    update_display(state_text=f'Mascote: {new_mascot.replace("_", " ").title()}')
-
-    logging.info(f"Mascote alternada para: {new_mascot}")
-    return jsonify({'current_mascot': new_mascot})
+    
+    # Show the change on display
+    update_display(state_text=f'Tema: {new_theme.replace("_", " ").title()}')
+    
+    logging.info(f"Mascote alternada para tema: {new_theme}")
+    return jsonify({'current_theme': new_theme})
 
 def handle_button():
     def on_press():
+        global last_capture_time
         logging.info("Physical button pressed: take photo")
         counter['photos'] += 1
         indicate('photo')
+        
+        # Set state to photo mode
+        cfg['inky']['current_state'] = 'tirar_foto'
+        cfg_path.write_text(yaml.safe_dump(cfg))
+        
         update_display(state_text='A TIRAR FOTO', show_camera_icon=True)
         capture_photo()
-        update_display(state_text='Pronto')
+        
+        # Update timestamp for auto-refresh
+        last_capture_time = time.time()
+        
+        # Start standby timer
+        start_standby_timer()
 
     def on_hold():
+        global last_capture_time
         logging.info("Physical button held: take gif")
         counter['gifs'] += 1
         indicate('gif')
+        
+        # Set state to gif mode
+        cfg['inky']['current_state'] = 'tirar_gif'
+        cfg_path.write_text(yaml.safe_dump(cfg))
+        
         update_display(state_text='A TIRAR GIF', show_gif_icon=True)
         capture_gif()
-        update_display(state_text='Pronto')
+        
+        # Update timestamp for auto-refresh
+        last_capture_time = time.time()
+        
+        # Start standby timer
+        start_standby_timer()
 
     btn.when_pressed = on_press
     btn.when_held = on_hold
+
+# Add below the imports at the top of the file
+import threading
+import time
+
+# Add these global variables for state management
+display_timer = None
+display_lock = threading.Lock()
+
+# Add these functions to handle display state timeout
+def reset_to_standby():
+    """Reset display to standby state after timeout"""
+    with display_lock:
+        # Change state to standby in config
+        cfg['inky']['current_state'] = 'standby'
+        cfg_path.write_text(yaml.safe_dump(cfg))
+        # Update display with standby state
+        update_display(state_text='Standby')
+        logging.info("Auto-reset display to standby state")
+
+def start_standby_timer():
+    """Start a timer to reset display to standby after 30 seconds"""
+    global display_timer
+    # Cancel any existing timer
+    if display_timer:
+        display_timer.cancel()
+    
+    # Create new timer
+    display_timer = threading.Timer(30.0, reset_to_standby)
+    display_timer.daemon = True
+    display_timer.start()
+    logging.info("Standby timer started (30s)")
 
 if __name__ == '__main__':
     logging.info("Starting app...")
