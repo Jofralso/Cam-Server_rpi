@@ -1,0 +1,25 @@
+# Ambientes virtuais
+venv/
+cam_venv/
+
+# Compilados do Python
+__pycache__/
+*.py[cod]
+
+# Ficheiros temporários e logs
+*.log
+*.tmp
+
+# Ficheiros de sistema
+.DS_Store
+Thumbs.db
+
+# Saídas e builds
+output/
+photos/
+
+# Ficheiros criados por o IDE/editor
+.vscode/
+.idea/
+
+.inky_fast/

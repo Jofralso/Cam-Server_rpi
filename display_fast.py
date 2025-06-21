@@ -1,54 +1,58 @@
-# display_fast.py
-
 from PIL import Image, ImageDraw, ImageFont
+from inky_fast.inky_fast import InkyFast
 import numpy as np
-from inky_fast.inky_fast import InkyPHATFast
+import os
 
-# Inicializa o driver rápido (monocromático ou bicolor)
-inky = InkyPHATFast("red")
+# Inicializa o driver rápido do Inky diretamente com resolução do hardware
+inky = InkyFast(resolution=(250, 122), colour="red")
 WIDTH, HEIGHT = inky.width, inky.height
-inky.set_border(inky.WHITE)
+inky.set_border(WHITE)
 
-# Cores para o buffer do InkyFast
-WHITE = 0   # no buf_a: 1=branco, 0=preto
+# Cores no buffer: WHITE=0, BLACK=1, RED=2
+WHITE = 0
 BLACK = 1
-RED   = 2   # se usares código a bicolor, buf_b irá captar este valor
+RED = 2
 
 # Carrega fonte maior
 try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 18)
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 18
+    )
 except IOError:
     font = ImageFont.load_default()
 
+# Ícones
 def draw_camera_icon(draw, x, y, color=BLACK):
-    draw.rectangle((x, y + 4, x + 12, y + 12), outline=color)
-    draw.rectangle((x + 2, y, x + 10, y + 4), outline=color)
-    draw.ellipse((x + 3, y + 5, x + 9, y + 11), outline=color)
-    draw.ellipse((x + 5, y + 7, x + 7, y + 9), fill=color)
+    draw.rectangle((x, y+4, x+12, y+12), outline=color)
+    draw.rectangle((x+2, y, x+10, y+4), outline=color)
+    draw.ellipse((x+3, y+5, x+9, y+11), outline=color)
+    draw.ellipse((x+5, y+7, x+7, y+9), fill=color)
 
 def draw_gif_icon(draw, x, y, color=BLACK):
     draw.text((x, y), "GIF", font=font, fill=color)
 
 def draw_error_icon(draw, x, y, color=BLACK):
-    draw.ellipse((x, y, x + 12, y + 12), outline=color)
-    draw.line((x + 6, y + 2, x + 6, y + 8), fill=color, width=2)
-    draw.line((x + 6, y + 10, x + 6, y + 10), fill=color, width=2)
+    draw.ellipse((x, y, x+12, y+12), outline=color)
+    draw.line((x+6, y+2, x+6, y+8), fill=color, width=2)
+    draw.line((x+6, y+10, x+6, y+10), fill=color, width=2)
 
-def show_on_inky(background_path,
-                 photos_taken=None,
-                 gifs_created=None,
-                 battery_level=None,
-                 wifi_strength=None,
-                 state_text=None,
-                 show_camera_icon=False,
-                 show_gif_icon=False,
-                 show_error_icon=False):
+# Função principal de exibição
+def show_on_inky(
+    background_path,
+    photos_taken=None,
+    gifs_created=None,
+    battery_level=None,
+    wifi_strength=None,
+    state_text=None,
+    show_camera_icon=False,
+    show_gif_icon=False,
+    show_error_icon=False,
+):
     # 1) Abre imagem de fundo e converte para grayscale
-    try:
-        bg = Image.open(background_path).convert("L")
-    except FileNotFoundError:
+    if not os.path.exists(background_path):
         print(f"Erro: Imagem de fundo não encontrada em {background_path}")
         return
+    bg = Image.open(background_path).convert("L")
 
     # 2) Cria canvas grayscale (L) com fundo branco (255)
     canvas = Image.new("L", (WIDTH, HEIGHT), 255)
@@ -100,9 +104,38 @@ def show_on_inky(background_path,
     # 6) Converte para bitmap 1-bit (pil mode '1')
     bw = canvas.point(lambda x: 0 if x < 128 else 1, '1')
 
-    # 7) Transforma em numpy array e reshape p/ (HEIGHT, WIDTH)
+    # 7) Transforma em numpy array e reshape para (HEIGHT, WIDTH)
     arr = np.array(bw, dtype=np.uint8).reshape((HEIGHT, WIDTH))
 
-    # 8) Envia para o InkyFast e atualiza o e-paper
+    # 8) Envia para InkyFast e atualiza rapidamente
     inky.set_image(arr)
-    inky.show()
+    inky.show_stay_awake()
+
+# Test harness
+if __name__ == '__main__':
+    import tempfile
+    from PIL import Image
+
+    tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+    img = Image.new('RGB', (100, 100), (255, 0, 0))
+    img.save(tmp.name)
+
+    print('Testing show_on_inky with dummy image and parameters...')
+    def dummy_set_image(buffer):
+        print('Buffer shape:', buffer.shape)
+        assert buffer.shape == (HEIGHT, WIDTH), 'Buffer shape mismatch'
+    inky.set_image = dummy_set_image
+
+    show_on_inky(
+        tmp.name,
+        photos_taken=1,
+        gifs_created=2,
+        battery_level=50,
+        wifi_strength=True,
+        state_text='TEST',
+        show_camera_icon=True,
+        show_gif_icon=True,
+        show_error_icon=True
+    )
+    print('Test passed')
+    tmp.close()

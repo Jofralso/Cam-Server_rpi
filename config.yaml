@@ -1,12 +1,24 @@
 camera:
-  resolution: [640, 480]
-
-paths:
-  photos: "./photos"
-  gifs: "./photos"
-
+  resolution:
+  - 640
+  - 480
 gpio:
-  led_red: 22
-  led_green: 27
-  led_blue: 17
   button: 5
+  led_blue: 15
+  led_green: 24
+  led_red: 23
+inky:
+  available_mascots:
+  - steve_jobs_ligado
+  - steve_jobs_standby
+  - steve_jobs_desligado
+  - steve_jobs_tirar_foto
+  - steve_jobs_tirar_gif
+  - steve_jobs_erro
+  color: red
+  height: 122
+  mascot: steve_jobs_standby
+  width: 250
+paths:
+  gifs: ./photos
+  photos: ./photos
