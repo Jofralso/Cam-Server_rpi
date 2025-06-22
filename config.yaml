@@ -8,13 +8,13 @@ camera:
 gpio:
   button: 6
   led:
-    blue: 16
-    green: 21
-    red: 20
+    blue: 20
+    green: 16
+    red: 21
 inky:
   color: red
-  current_state: tirar_foto
-  current_theme: apple_mascot
+  current_state: tirar_gif
+  current_theme: steve_jobs
   dimensions:
   - 250
   - 122
